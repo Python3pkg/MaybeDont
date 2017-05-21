@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+
 import logging, random, math
 from collections import namedtuple, defaultdict
 from six.moves.urllib.parse import urlsplit, parse_qs
@@ -64,12 +64,12 @@ class DupePredictor(object):
         """
         path, query = _parse_url(url)
         dupestats = []
-        extend_ds = lambda x: dupestats.extend(filter(None, (
-            ds_dict.get(key) for ds_dict, key in x)))
+        extend_ds = lambda x: dupestats.extend([_f for _f in (
+            ds_dict.get(key) for ds_dict, key in x) if _f])
         if self.urls_by_path.get(path):
             extend_ds([(self.path_dupstats, path)])
         # If param is in the query
-        for param, value in query.items():
+        for param, value in list(query.items()):
             qwp_key = _q_key(_without_key(query, param))
             # Have we seen the query with param changed or removed?
             has_changed = self.urls_by_path_qwp.get((path, param, qwp_key))
@@ -106,7 +106,7 @@ class DupePredictor(object):
             .difference(url for url, _ in duplicates)))
         self.path_dupstats[item_path].update(len(duplicates), n_path_nodup)
         # Other hypotheses, if param is in the query
-        for param, value in item_query.items():
+        for param, value in list(item_query.items()):
             self._update_with_param(
                 duplicates, min_hash, item_path, item_query, param, [value])
         # Other hypotheses, if param is not in the query
@@ -116,7 +116,7 @@ class DupePredictor(object):
                 duplicates, min_hash, item_path, item_query, param,
                 self.param_values.get((item_path, param), set()))
         # Update indexes
-        for param, value in item_query.items():
+        for param, value in list(item_query.items()):
             self.urls_by_path_q[item_path, _q_key(item_query)].add(item_url)
             item_qwp_key = _q_key(_without_key(item_query, param))
             self.urls_by_path_qwp[item_path, param, item_qwp_key].add(item_url)
@@ -214,7 +214,7 @@ class DupePredictor(object):
 
 
 def _without_key(dict_, key):
-    return {k: v for k, v in dict_.items() if k != key}
+    return {k: v for k, v in list(dict_.items()) if k != key}
 
 
 def _with_key_val(dict_, key, value):
@@ -225,7 +225,7 @@ def _with_key_val(dict_, key, value):
 
 def _parse_url(url):
     p = urlsplit(url)
-    query = {k: v[0] for k, v in parse_qs(p.query).items() if len(v) == 1}
+    query = {k: v[0] for k, v in list(parse_qs(p.query).items()) if len(v) == 1}
     return ''.join([p.netloc, p.path]), query
 
 
@@ -236,7 +236,7 @@ def _q_key(query):
 def _log_dupstats(dupstats, name, min_dup):
     dupstats_items = [
         (url, dupstat) for url, dupstat in sorted(
-            dupstats.items(), key=lambda x: x[1].total, reverse=True)
+            list(dupstats.items()), key=lambda x: x[1].total, reverse=True)
         if dupstat.dup > min_dup]
     if dupstats_items:
         logger.debug('%s:', name)

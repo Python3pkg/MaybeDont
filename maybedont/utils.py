@@ -23,7 +23,7 @@ def get_too_common_shingles(texts, threshold=0.05):
         for h in hashes:
             shingle_counts[h] += 1
     if shingle_counts:
-        return set(h for h, count in shingle_counts.items()
+        return set(h for h, count in list(shingle_counts.items())
                    if count > max(1, threshold * n_items))
     return set()
 
